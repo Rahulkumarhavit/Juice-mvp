@@ -120,7 +120,7 @@ const AuthPage = () => {
               </form>
             </TabsContent>
 
-            <TabsContent value="signup">
+            {/* <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
@@ -149,7 +149,7 @@ const AuthPage = () => {
                   {loading ? "Creating account..." : "Sign Up"}
                 </Button>
               </form>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </CardContent>
       </Card>
