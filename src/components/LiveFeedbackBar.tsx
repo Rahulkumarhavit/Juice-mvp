@@ -20,17 +20,6 @@ const LiveFeedbackBar = ({
         </div>
       </div>;
   }
-  return <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="container px-4 py-4">
-        <div className="flex items-center justify-end gap-4 flex-wrap">
-          
-          
-          <Button size="lg" className={cn("gap-2 gradient-juice border-0 shadow-soft hover:shadow-hover transition-smooth", "text-primary-foreground font-semibold")}>
-            See {recipeCount} {recipeCount === 1 ? 'Recipe' : 'Recipes'}
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
-    </div>;
+  return 
 };
 export default LiveFeedbackBar;
