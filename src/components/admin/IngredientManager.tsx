@@ -35,11 +35,11 @@ const IngredientManager = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
-  const [formData, setFormData] = useState({ 
-    name: "", 
-    emoji: "", 
+  const [formData, setFormData] = useState({
+    name: "",
+    emoji: "",
     category_id: "",
-    is_popular: false 
+    is_popular: false
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -57,7 +57,7 @@ const IngredientManager = () => {
         .from('categories')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
       setCategories(data || []);
     } catch (error: any) {
@@ -75,7 +75,7 @@ const IngredientManager = () => {
         .from('ingredients')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
       setIngredients(data || []);
     } catch (error: any) {
@@ -87,23 +87,56 @@ const IngredientManager = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error",
-          description: "Please upload an image file",
-          variant: "destructive",
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Create unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `ingredients/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('ingredient-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
         });
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, emoji: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('ingredient-images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, emoji: publicUrl });
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -326,9 +359,8 @@ const IngredientManager = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Emoji</TableHead>
+              <TableHead>Image</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Popular</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -336,9 +368,9 @@ const IngredientManager = () => {
             {ingredients.map((ingredient) => (
               <TableRow key={ingredient.id}>
                 <TableCell className="font-medium">{ingredient.name}</TableCell>
-                <TableCell>{ingredient.emoji}</TableCell>
+                <TableCell>
+                  <img src={ingredient.emoji} alt={ingredient.name} className="w-6 h-6" /></TableCell>
                 <TableCell>{getCategoryName(ingredient.category_id)}</TableCell>
-                <TableCell>{ingredient.is_popular ? "Yes" : "No"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Dialog
@@ -396,7 +428,7 @@ const IngredientManager = () => {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="edit-emoji">Emoji</Label>
+                            <Label htmlFor="edit-emoji">Image</Label>
                             <div className="flex gap-2">
                               <Input
                                 id="edit-emoji"
@@ -422,16 +454,6 @@ const IngredientManager = () => {
                                 <Upload className="w-4 h-4" />
                               </Button>
                             </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="edit-is_popular"
-                              checked={formData.is_popular}
-                              onChange={(e) => setFormData({ ...formData, is_popular: e.target.checked })}
-                              className="w-4 h-4"
-                            />
-                            <Label htmlFor="edit-is_popular">Mark as popular</Label>
                           </div>
                           <Button onClick={handleUpdate} className="w-full" disabled={loading}>
                             {loading ? "Updating..." : "Update Ingredient"}
