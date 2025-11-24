@@ -310,11 +310,11 @@ const IngredientManager = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emoji">Emoji</Label>
+                <Label htmlFor="emoji">Image</Label>
                 <div className="flex gap-2">
                   <Input
                     id="emoji"
-                    placeholder="🥭"
+                    
                     value={formData.emoji}
                     onChange={(e) => setFormData({ ...formData, emoji: e.target.value })}
                     className="flex-1"
