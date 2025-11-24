@@ -608,14 +608,12 @@ const RecipeDetail = () => {
             </p>
             <div className="flex flex-col gap-4 pt-2">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <span className="font-semibold">{recipe.ingredients.length} Ingredients</span>
+                <span className="font-semibold">Ingredients : {recipe.ingredients.length} </span>
               </div>
 
               {recipe.yield_oz && (
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">{recipe.yield_oz} yield</span>
+                  <span className="font-semibold">yield : {recipe.yield_oz} </span>
                 </div>
               )}
             </div>
@@ -634,19 +632,13 @@ const RecipeDetail = () => {
               <Card key={index} className="overflow-hidden hover:shadow-hover transition-smooth">
                 <CardContent className="p-4">
                   <div className="flex flex-col items-center text-center gap-3">
-                    {ingredient.image ? (
                       <div className="w-20 h-20 rounded-lg overflow-hidden">
                         <img
-                          src={ingredient.image}
+                          src={ingredient.emoji}
                           alt={ingredient.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center text-4xl">
-                        {ingredient.emoji}
-                      </div>
-                    )}
                     <div>
                       <h3 className="font-bold text-sm">{ingredient.name}</h3>
                     </div>
