@@ -336,16 +336,7 @@ const IngredientManager = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="is_popular"
-                  checked={formData.is_popular}
-                  onChange={(e) => setFormData({ ...formData, is_popular: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="is_popular">Mark as popular</Label>
-              </div>
+          
               <Button onClick={handleAdd} className="w-full" disabled={loading}>
                 {loading ? "Adding..." : "Add Ingredient"}
               </Button>

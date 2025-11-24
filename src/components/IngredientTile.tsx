@@ -22,7 +22,7 @@ const IngredientTile = ({
         </div>}
       
       <div className="w-12 h-12 flex items-center justify-center">
-        <img src={image} alt={name} className="w-full h-full object-cover rounded-md" />
+        <img src={emoji} alt={name} className="w-full h-full object-cover rounded-md" />
       </div>
       
       <span className="font-medium text-[11px] text-foreground text-center leading-tight">
