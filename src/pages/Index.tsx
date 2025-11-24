@@ -253,7 +253,7 @@ const Index = () => {
         </>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-50">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/20 backdrop-blur-sm">
         <div className="container px-4 py-4 flex items-center justify-between">
 
           {/* LEFT placeholder (keeps center text centered) */}
@@ -261,26 +261,26 @@ const Index = () => {
 
           {/* CENTER message when no ingredients selected */}
           <div className="w-1/3 text-center">
-            {selectedIngredients.length === 0 && (
-              <div className="text-center">
-                No ingredients selected yet. Start tapping to see what you can make!
-              </div>
-            )}
+        {selectedIngredients.length === 0 && (
+          <div className="text-center">
+            No ingredients selected yet. Start tapping to see what you can make!
+          </div>
+        )}
           </div>
 
           {/* RIGHT button */}
           <div className="w-1/3 flex justify-end">
-            {selectedIngredients.length > 0 && (
-              <button
-                className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3 rounded-lg font-semibold text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={selectedIngredients.length === 0}
-                onClick={() =>
-                  navigate(`/recipes?ingredients=${selectedIngredients.join(",")}`)
-                }
-              >
-                See Recipes ({recipeCount})
-              </button>
-            )}
+        {selectedIngredients.length > 0 && (
+          <button
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3 rounded-lg font-semibold text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedIngredients.length === 0}
+            onClick={() =>
+          navigate(`/recipes?ingredients=${selectedIngredients.join(",")}`)
+            }
+          >
+            See Recipes ({recipeCount})
+          </button>
+        )}
           </div>
 
         </div>
