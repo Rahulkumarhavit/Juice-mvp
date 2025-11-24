@@ -615,7 +615,7 @@ const RecipeDetail = () => {
               {recipe.yield_oz && (
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">{recipe.yield_oz} oz</span>
+                  <span className="font-semibold">{recipe.yield_oz} yield</span>
                 </div>
               )}
             </div>

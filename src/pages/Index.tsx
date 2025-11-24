@@ -256,13 +256,13 @@ const Index = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <div className="container px-4 py-4">
           <div className="flex items-center justify-end gap-4 flex-wrap">
-            <button
+            {selectedIngredients.length > 0 && <button
               className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3 rounded-lg font-semibold text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed "
               disabled={selectedIngredients.length === 0}
               onClick={() => navigate(`/recipes?ingredients=${selectedIngredients.join(",")}`)}
             >
               See Recipes {selectedIngredients.length > 0 && `(${recipeCount})`}
-            </button>
+            </button>}
           </div>
         </div>
       </div>;
