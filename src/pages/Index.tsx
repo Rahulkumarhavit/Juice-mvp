@@ -263,7 +263,7 @@ const Index = () => {
         <div className="container px-4 py-4 flex items-center justify-between">
 
           {/* LEFT placeholder */}
-          <div className="w-1/3"></div>
+          <div className="md:w-1/3"></div>
 
           {/* CENTER message when no ingredients selected */}
           <div className="text-center">
@@ -289,7 +289,7 @@ const Index = () => {
             )}
           </div> */}
 
-          <div className="w-full md:w-1/3 flex justify-end">
+          <div className=" md:w-1/3 flex justify-end">
             {selectedIngredients.length > 0 && (
               <button
                 className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-lg font-semibold text-base md:text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
