@@ -30,7 +30,7 @@ const IngredientsGrid = ({
   }, {} as Record<string, Ingredient[]>);
 
   // Define category order
-  const categoryOrder = ['Fruits', 'Citrus', 'Vegetables', 'Herbs & Spices'];
+  const categoryOrder = ['Fruits', 'Citrus', 'Vegetables', 'Herbs & Spices', 'Nuts & Seeds', 'Sweeteners'];
   const sortedCategories = categoryOrder.filter(cat => groupedIngredients[cat]);
 
   return (

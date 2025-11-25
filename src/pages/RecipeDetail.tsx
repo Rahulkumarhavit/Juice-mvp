@@ -384,6 +384,7 @@ interface IngredientDetail {
   name: string;
   emoji: string;
   image: string;
+  quantity?: string;
 }
 
 interface RecipeData {
@@ -394,6 +395,7 @@ interface RecipeData {
   yield_oz: string;
   ingredients: IngredientDetail[];
   directions: string | null;
+  quantity: string;
 }
 
 // Map ingredient names to local images
@@ -523,6 +525,7 @@ const RecipeDetail = () => {
           name: ingredientName,
           emoji: ri.ingredients?.emoji || '🔸',
           image: INGREDIENT_IMAGE_MAP[ingredientNameLower] || '',
+          quantity: ri.quantity || '',
         };
       }) || [];
 
@@ -550,6 +553,7 @@ const RecipeDetail = () => {
         yield_oz: recipeData.yield_oz || '',
         ingredients,
         directions: recipeData.directions || null,
+        quantity: recipeData.quantity || '',
       });
 
     } catch (error: any) {
@@ -638,6 +642,7 @@ const RecipeDetail = () => {
                           alt={ingredient.name}
                           className="w-full h-full object-cover"
                         />
+                        <span>{ingredient.quantity}</span>
                       </div>
                     <div>
                       <h3 className="font-bold text-sm">{ingredient.name}</h3>

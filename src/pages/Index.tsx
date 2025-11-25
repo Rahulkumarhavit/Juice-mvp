@@ -82,7 +82,7 @@ const Index = () => {
         .select('*');
 
       if (categoriesError) throw categoriesError;
-
+      console.log(categories,"categories")
       // Create category ID to name map
       const categoryMap: Record<string, string> = {};
       categoriesData?.forEach(cat => {
@@ -111,8 +111,8 @@ const Index = () => {
           category: categoryMap[item.category_id] || "Other"
         };
       }) || [];
-
-      setIngredients(transformedIngredients);
+      console.log(transformedIngredients,"ingredients")
+      setIngredients(transformedIngredients); 
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast({
@@ -268,7 +268,7 @@ const Index = () => {
           {/* CENTER message when no ingredients selected */}
           <div className="text-center">
             {selectedIngredients.length === 0 && (
-              <div className="text-center text-sm text-[#997766]">
+              <div className="text-center text-sm text-[#997766] md:text-nowrap">
                 No ingredients selected yet. Start tapping to see what you can make!
               </div>
             )}
