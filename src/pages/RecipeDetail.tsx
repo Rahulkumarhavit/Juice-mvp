@@ -506,6 +506,7 @@ const RecipeDetail = () => {
       const { data: recipeIngredientsData, error: recipeIngredientsError } = await supabase
         .from('recipe_ingredients')
         .select(`
+          quantity,
           ingredients (
             id,
             name,
@@ -528,7 +529,6 @@ const RecipeDetail = () => {
           quantity: ri.quantity || '',
         };
       }) || [];
-
       // Get recipe image
       const recipeNameLower = recipeData.name.toLowerCase();
       let recipeImage = recipeData.thumbnail_url || '';
@@ -636,14 +636,16 @@ const RecipeDetail = () => {
               <Card key={index} className="overflow-hidden hover:shadow-hover transition-smooth">
                 <CardContent className="p-4">
                   <div className="flex flex-col items-center text-center gap-3">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden">
-                        <img
-                          src={ingredient.emoji}
-                          alt={ingredient.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <span>{ingredient.quantity}</span>
-                      </div>
+                    <div className="w-20 h-20 rounded-lg overflow-hidden">
+                      <img
+                        src={ingredient.emoji}
+                        alt={ingredient.name}
+                        className="w-full h-full object-cover"
+                      />
+
+
+                    </div>
+                    <p>{ingredient.quantity}</p>
                     <div>
                       <h3 className="font-bold text-sm">{ingredient.name}</h3>
                     </div>

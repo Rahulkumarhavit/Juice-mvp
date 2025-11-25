@@ -82,7 +82,7 @@ const Index = () => {
         .select('*');
 
       if (categoriesError) throw categoriesError;
-      console.log(categories,"categories")
+      console.log(categories, "categories")
       // Create category ID to name map
       const categoryMap: Record<string, string> = {};
       categoriesData?.forEach(cat => {
@@ -111,8 +111,8 @@ const Index = () => {
           category: categoryMap[item.category_id] || "Other"
         };
       }) || [];
-      console.log(transformedIngredients,"ingredients")
-      setIngredients(transformedIngredients); 
+      console.log(transformedIngredients, "ingredients")
+      setIngredients(transformedIngredients);
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast({
@@ -256,8 +256,8 @@ const Index = () => {
 
       <div
         className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ${selectedIngredients.length === 0
-            ? "bg-white/20 backdrop-blur-sm"
-            : "bg-none"
+          ? "bg-white/20 backdrop-blur-sm"
+          : "bg-none"
           }`}
       >
         <div className="container px-4 py-4 flex items-center justify-between">
@@ -275,10 +275,24 @@ const Index = () => {
           </div>
 
           {/* RIGHT button */}
-          <div className="w-1/3 flex justify-end">
+          {/* <div className="w-1/3 flex justify-end">
             {selectedIngredients.length > 0 && (
               <button
                 className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-3 rounded-lg font-semibold text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedIngredients.length === 0}
+                onClick={() =>
+                  navigate(`/recipes?ingredients=${selectedIngredients.join(",")}`)
+                }
+              >
+                See Recipes ({recipeCount})
+              </button>
+            )}
+          </div> */}
+
+          <div className="w-full md:w-1/3 flex justify-end">
+            {selectedIngredients.length > 0 && (
+              <button
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-lg font-semibold text-base md:text-lg transition-smooth shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 disabled={selectedIngredients.length === 0}
                 onClick={() =>
                   navigate(`/recipes?ingredients=${selectedIngredients.join(",")}`)
