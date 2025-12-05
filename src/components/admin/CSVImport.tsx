@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/supabase/client";
+import Papa from "papaparse";
 
 interface ImportResult {
   success: boolean;
@@ -16,6 +17,9 @@ interface ImportResult {
     message: string;
   }[];
 }
+
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const CSVImport = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -46,6 +50,7 @@ const CSVImport = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     if (!file.name.endsWith(".csv")) {
       toast({
         title: "Error",
@@ -54,28 +59,37 @@ const CSVImport = () => {
       });
       return;
     }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        title: "Error",
+        description: `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSelectedFile(file);
     setImportResult(null);
     parseCSV(file);
   };
 
   const parseCSV = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target?.result as string;
-      const lines = text.split("\n").filter(line => line.trim());
-      const headers = lines[0].split(",").map(h => h.trim());
-      const data = lines.slice(1, 6).map(line => {
-        const values = line.split(",").map(v => v.trim());
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || "";
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      preview: 5,
+      complete: (results) => {
+        setPreviewData(results.data);
+      },
+      error: (error) => {
+        toast({
+          title: "Parse Error",
+          description: error.message,
+          variant: "destructive"
         });
-        return row;
-      });
-      setPreviewData(data);
-    };
-    reader.readAsText(file);
+      }
+    });
   };
 
   const handleImport = async () => {
@@ -89,167 +103,207 @@ const CSVImport = () => {
     }
 
     setImporting(true);
-    const errors: { row: number; message: string }[] = [];
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split("\n").filter(line => line.trim());
-        const headers = lines[0].split(",").map(h => h.trim());
-        const allData = lines.slice(1).map(line => {
-          const values = line.split(",").map(v => v.trim());
-          const row: any = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index] || "";
-          });
-          return row;
-        });
+    Papa.parse(selectedFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const allData = results.data as any[];
+        const errors: { row: number; message: string }[] = [];
 
-        if (importType === "ingredients") {
-          // Get categories
-          const { data: categoriesData } = await supabase
-            .from('categories')
-            .select('*');
-          
-          const categoryMap = new Map(
-            categoriesData?.map(cat => [cat.name.toLowerCase(), cat.id]) || []
-          );
+        try {
+          if (importType === "ingredients") {
+            // Get categories and existing ingredients
+            const [{ data: categoriesData }, { data: existingIngredients }] = await Promise.all([
+              supabase.from('categories').select('*'),
+              supabase.from('ingredients').select('name')
+            ]);
 
-          for (let i = 0; i < allData.length; i++) {
-            const row = allData[i];
-            
-            if (!row.name || row.name.trim() === "") {
-              errors.push({ row: i + 2, message: "Missing ingredient name" });
-              continue;
-            }
+            const categoryMap = new Map(
+              categoriesData?.map(cat => [cat.name.toLowerCase(), cat.id]) || []
+            );
 
-            if (!row.category || row.category.trim() === "") {
-              errors.push({ row: i + 2, message: "Missing category" });
-              continue;
-            }
+            const existingIngredientNames = new Set(
+              existingIngredients?.map(ing => ing.name.toLowerCase()) || []
+            );
 
-            const categoryId = categoryMap.get(row.category.toLowerCase());
-            if (!categoryId) {
-              errors.push({ row: i + 2, message: `Category '${row.category}' not found` });
-              continue;
-            }
+            for (let i = 0; i < allData.length; i++) {
+              const row = allData[i];
 
-            const { error } = await supabase
-              .from('ingredients')
-              .insert({
-                name: row.name,
-                category_id: categoryId
-              });
-
-            if (error) {
-              errors.push({ row: i + 2, message: error.message });
-            }
-          }
-        } else {
-          // Import recipes
-          const { data: ingredientsData } = await supabase
-            .from('ingredients')
-            .select('id, name');
-          
-          const ingredientMap = new Map(
-            ingredientsData?.map(ing => [ing.name.toLowerCase(), ing.id]) || []
-          );
-
-          for (let i = 0; i < allData.length; i++) {
-            const row = allData[i];
-            
-            if (!row.name || row.name.trim() === "") {
-              errors.push({ row: i + 2, message: "Missing recipe name" });
-              continue;
-            }
-
-            if (!row.ingredients || row.ingredients.trim() === "") {
-              errors.push({ row: i + 2, message: "Missing ingredients" });
-              continue;
-            }
-
-            if (!row.yield_oz || isNaN(parseInt(row.yield_oz))) {
-              errors.push({ row: i + 2, message: "Invalid or missing yield" });
-              continue;
-            }
-
-            // Insert recipe
-            const { data: newRecipe, error: recipeError } = await supabase
-              .from('recipes')
-              .insert({
-                name: row.name,
-                description: row.description || "",
-                yield_oz: parseInt(row.yield_oz),
-                directions: row.directions || ""
-              })
-              .select()
-              .single();
-
-            if (recipeError) {
-              errors.push({ row: i + 2, message: recipeError.message });
-              continue;
-            }
-
-            // Parse ingredients (pipe-separated)
-            const ingredientNames = row.ingredients.split("|").map((s: string) => s.trim());
-            const quantities = row.quantities ? row.quantities.split("|").map((s: string) => s.trim()) : [];
-
-            for (let j = 0; j < ingredientNames.length; j++) {
-              const ingName = ingredientNames[j];
-              const ingId = ingredientMap.get(ingName.toLowerCase());
-              
-              if (!ingId) {
-                errors.push({ row: i + 2, message: `Ingredient '${ingName}' not found` });
+              if (!row.name || row.name.trim() === "") {
+                errors.push({ row: i + 2, message: "Missing ingredient name" });
                 continue;
               }
 
-              await supabase
-                .from('recipe_ingredients')
+              if (!row.category || row.category.trim() === "") {
+                errors.push({ row: i + 2, message: "Missing category" });
+                continue;
+              }
+
+              // Check for duplicates
+              if (existingIngredientNames.has(row.name.toLowerCase())) {
+                errors.push({ row: i + 2, message: `Ingredient '${row.name}' already exists` });
+                continue;
+              }
+
+              const categoryId = categoryMap.get(row.category.toLowerCase());
+              if (!categoryId) {
+                errors.push({ row: i + 2, message: `Category '${row.category}' not found` });
+                continue;
+              }
+
+              const { error } = await supabase
+                .from('ingredients')
                 .insert({
-                  recipe_id: newRecipe.id,
-                  ingredient_id: ingId,
-                  quantity: quantities[j] || null
+                  name: row.name,
+                  category_id: categoryId
                 });
+
+              if (error) {
+                errors.push({ row: i + 2, message: error.message });
+              } else {
+                // Add to set to prevent duplicates within the same import
+                existingIngredientNames.add(row.name.toLowerCase());
+              }
+            }
+          } else {
+            // Import recipes
+            const [{ data: ingredientsData }, { data: existingRecipes }] = await Promise.all([
+              supabase.from('ingredients').select('id, name'),
+              supabase.from('recipes').select('name')
+            ]);
+
+            const ingredientMap = new Map(
+              ingredientsData?.map(ing => [ing.name.toLowerCase(), ing.id]) || []
+            );
+
+            const existingRecipeNames = new Set(
+              existingRecipes?.map(recipe => recipe.name.toLowerCase()) || []
+            );
+
+            for (let i = 0; i < allData.length; i++) {
+              const row = allData[i];
+
+              if (!row.name || row.name.trim() === "") {
+                errors.push({ row: i + 2, message: "Missing recipe name" });
+                continue;
+              }
+
+              // Check for duplicates
+              if (existingRecipeNames.has(row.name.toLowerCase())) {
+                errors.push({ row: i + 2, message: `Recipe '${row.name}' already exists` });
+                continue;
+              }
+
+              if (!row.ingredients || row.ingredients.trim() === "") {
+                errors.push({ row: i + 2, message: "Missing ingredients" });
+                continue;
+              }
+
+              if (!row.yield_oz || isNaN(parseFloat(row.yield_oz))) {
+                errors.push({ row: i + 2, message: "Invalid or missing yield" });
+                continue;
+              }
+
+              // Insert recipe
+              const { data: newRecipe, error: recipeError } = await supabase
+                .from('recipes')
+                .insert({
+                  name: row.name,
+                  description: row.description || "",
+                  yield_oz: parseFloat(row.yield_oz),
+                  directions: row.directions || ""
+                })
+                .select()
+                .single();
+
+              if (recipeError) {
+                errors.push({ row: i + 2, message: recipeError.message });
+                continue;
+              }
+
+              // Parse ingredients (pipe-separated)
+              const ingredientNames = row.ingredients.split("|").map((s: string) => s.trim());
+              const quantities = row.quantities ? row.quantities.split("|").map((s: string) => s.trim()) : [];
+
+              let recipeIngredientsSuccess = true;
+
+              for (let j = 0; j < ingredientNames.length; j++) {
+                const ingName = ingredientNames[j];
+                const ingId = ingredientMap.get(ingName.toLowerCase());
+
+                if (!ingId) {
+                  errors.push({ row: i + 2, message: `Ingredient '${ingName}' not found` });
+                  recipeIngredientsSuccess = false;
+                  continue;
+                }
+
+                const { error: ingredientError } = await supabase
+                  .from('recipe_ingredients')
+                  .insert({
+                    recipe_id: newRecipe.id,
+                    ingredient_id: ingId,
+                    quantity: quantities[j] || null
+                  });
+
+                if (ingredientError) {
+                  errors.push({ row: i + 2, message: `Failed to add ingredient '${ingName}': ${ingredientError.message}` });
+                  recipeIngredientsSuccess = false;
+                }
+              }
+
+              // If recipe ingredients failed, delete the recipe to maintain data integrity
+              if (!recipeIngredientsSuccess) {
+                await supabase.from('recipes').delete().eq('id', newRecipe.id);
+                errors.push({ row: i + 2, message: "Recipe deleted due to ingredient errors" });
+              } else {
+                // Add to set to prevent duplicates within the same import
+                existingRecipeNames.add(row.name.toLowerCase());
+              }
             }
           }
-        }
 
-        const result: ImportResult = {
-          success: errors.length === 0,
-          rowsProcessed: allData.length,
-          errors
-        };
-        
-        setImportResult(result);
-        
-        if (result.success) {
+          const result: ImportResult = {
+            success: errors.length === 0,
+            rowsProcessed: allData.length,
+            errors
+          };
+
+          setImportResult(result);
+
+          if (result.success) {
+            toast({
+              title: "Success",
+              description: `Successfully imported ${result.rowsProcessed} ${importType}`
+            });
+            setSelectedFile(null);
+            setPreviewData([]);
+          } else {
+            toast({
+              title: "Import completed with errors",
+              description: `${errors.length} error(s) found. Check details below.`,
+              variant: "destructive"
+            });
+          }
+        } catch (error: any) {
           toast({
-            title: "Success",
-            description: `Successfully imported ${result.rowsProcessed} ${importType}`
-          });
-          setSelectedFile(null);
-          setPreviewData([]);
-        } else {
-          toast({
-            title: "Import completed with errors",
-            description: `${errors.length} error(s) found. Check details below.`,
+            title: "Error",
+            description: error.message,
             variant: "destructive"
           });
         }
-        
+
         setImporting(false);
-      };
-      
-      reader.readAsText(selectedFile);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-      setImporting(false);
-    }
+      },
+      error: (error) => {
+        toast({
+          title: "Parse Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        setImporting(false);
+      }
+    });
   };
 
   return (
