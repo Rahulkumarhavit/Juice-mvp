@@ -29,22 +29,68 @@ const CSVImport = () => {
   const [importing, setImporting] = useState(false);
   const { toast } = useToast();
 
-  const downloadTemplate = (type: "ingredients" | "recipes") => {
+  const downloadTemplate = async (type: "ingredients" | "recipes") => {
     let csvContent = "";
-    
-    if (type === "ingredients") {
-      csvContent = "name,category\nApple,Fruits\nOrange,Citrus\nCarrot,Vegetables\nSpinach,Vegetables\nGinger,Herbs & Spices";
-    } else {
-      csvContent = "name,description,yield_oz,directions,ingredients,quantities\nMorning Green Boost,A refreshing green juice,16,Wash all ingredients. Juice and serve.,Apple|Spinach|Ginger,2 medium|1 cup|1 inch\nSweet Beet Energy,Energizing beet blend,12,Peel and juice. Serve chilled.,Beet|Carrot|Lemon,1 large|2 medium|1/2";
-    }
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${type}_template.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    try {
+      if (type === "ingredients") {
+        // Fetch categories from backend
+        const { data: categories, error } = await supabase
+          .from('categories')
+          .select('name')
+          .order('name');
+
+        if (error) throw error;
+
+        if (!categories || categories.length === 0) {
+          toast({
+            title: "Error",
+            description: "No categories found in database",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Create example rows using actual categories
+        const exampleRows = categories.map((cat, index) => {
+          const examples = ['Apple', 'Orange', 'Carrot', 'Spinach', 'Ginger'];
+          return `${examples[index] || 'Example'},${cat.name}`;
+        }).join('\n');
+
+        csvContent = `name,category\n${exampleRows}`;
+      } else {
+        // Fetch sample ingredients for recipe template
+        const { data: ingredients, error } = await supabase
+          .from('ingredients')
+          .select('name')
+
+        if (error) throw error;
+
+        const sampleIngredients = ingredients && ingredients.length > 0
+          ? ingredients.map(ing => ing.name).join('|')
+          : 'Apple|Spinach|Ginger';
+
+        const sampleQuantities = ingredients && ingredients.length > 0
+          ? ingredients.map(() => '1 cup').join('|')
+          : '2 medium|1 cup|1 inch';
+
+        csvContent = `name,description,yield_oz,directions,ingredients,quantities\nMorning Green Boost,A refreshing green juice,16,Wash all ingredients. Juice and serve.,${sampleIngredients},${sampleQuantities}\nSweet Beet Energy,Energizing beet blend,12.5,Peel and juice. Serve chilled.,${sampleIngredients},${sampleQuantities}`;
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}_template.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to generate template: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
